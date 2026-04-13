@@ -110,7 +110,7 @@ foreach(_fmt ${FLUTUBE_FORMATS})
     add_custom_command(TARGET FluTube_${_fmt} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/Resources"
-            "$<TARGET_BUNDLE_CONTENT_DIR:FluTube_${_fmt}>/Resources"
+            "$<TARGET_FILE_DIR:FluTube_${_fmt}>/../Resources"
         COMMENT "Copying Resources into FluTube_${_fmt}"
         VERBATIM
     )
