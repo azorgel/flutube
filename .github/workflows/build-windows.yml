@@ -1,0 +1,80 @@
+name: Build & Release Windows Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. v1.0)'
+        required: true
+        default: 'v1.0'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write   # required to create GitHub Releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download yt-dlp for Windows
+        shell: pwsh
+        run: |
+          $url = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
+          Invoke-WebRequest -Uri $url -OutFile "Resources\yt-dlp.exe"
+
+      - name: Configure CMake
+        run: cmake -B build -A x64 -S .
+
+      - name: Build Release
+        run: cmake --build build --config Release --parallel
+
+      - name: Install NSIS
+        run: choco install nsis --no-progress -y
+
+      - name: Create installer
+        shell: pwsh
+        run: |
+          $buildDir = "$pwd\build"
+          $distDir  = "$pwd\dist"
+          New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+          & "C:\Program Files (x86)\NSIS\makensis.exe" `
+              "/DBUILD_DIR=$buildDir" `
+              "/DDIST_DIR=$distDir"   `
+              "installer\flutube.nsi"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Rename to URL-friendly filename for clean download link
+          Copy-Item "$distDir\FluTube Installer.exe" `
+                    "$distDir\FluTube_Installer.exe"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: "FluTube ${{ github.event.inputs.version }} — Windows"
+          body: |
+            ## Install FluTube
+
+            **[⬇ Download FluTube_Installer.exe](../../releases/download/${{ github.event.inputs.version }}/FluTube_Installer.exe)**
+
+            ---
+
+            ### Steps
+
+            1. Click the download link above
+            2. Double-click `FluTube_Installer.exe`
+            3. **If Windows shows a blue "Windows protected your PC" screen:**
+               click **More info** → **Run anyway**
+               *(This appears because the file isn't commercially signed — it's safe)*
+            4. Click **Next** → **Install** → **Finish** (needs admin/UAC prompt)
+            5. Open **Ableton Live**
+            6. **Preferences** → **Plug-Ins** → click **Rescan Plug-Ins**
+            7. Add a MIDI track → click the instrument slot → **VST3** → **Volta Labs** → **FluTube**
+            8. Paste a YouTube URL and hit **Load** — MIDI note C4 = root pitch
+
+            ### Uninstall
+            **Settings** → **Apps** → search "FluTube" → Uninstall
+          files: dist\FluTube_Installer.exe
+          draft: false
+          prerelease: false
