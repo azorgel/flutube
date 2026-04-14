@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
-set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "" FORCE)
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
 project(FluTube VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -35,6 +35,12 @@ endif()
 #  3. Fall back to simple linear-resampling pitch shift (changes speed too)
 #
 option(FLUTUBE_USE_RUBBERBAND "Enable RubberBand pitch shifting" ON)
+
+# Homebrew only ships arm64 binaries — disable RubberBand for universal builds.
+if("${CMAKE_OSX_ARCHITECTURES}" MATCHES ";")
+    set(FLUTUBE_USE_RUBBERBAND OFF CACHE BOOL "" FORCE)
+    message(STATUS "FluTube: RubberBand disabled for universal (fat) build")
+endif()
 
 set(FLUTUBE_HAS_RUBBERBAND OFF)
 
