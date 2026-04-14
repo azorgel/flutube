@@ -36,6 +36,25 @@ fi
 chmod +x "$SCRIPT_DIR/Resources/yt-dlp"
 echo -e "${GREEN}✓ yt-dlp binary found${NC}"
 
+# Check ffmpeg/ffprobe binaries exist in Resources/ (needed by yt-dlp for audio postprocessing)
+if [ ! -f "$SCRIPT_DIR/Resources/ffmpeg" ] || [ ! -f "$SCRIPT_DIR/Resources/ffprobe" ]; then
+    echo -e "${YELLOW}⚠  Resources/ffmpeg or ffprobe not found — copying from Homebrew...${NC}"
+    FF=$(command -v ffmpeg  2>/dev/null || true)
+    FP=$(command -v ffprobe 2>/dev/null || true)
+    if [ -z "$FF" ] || [ -z "$FP" ]; then
+        echo -e "${RED}Error: ffmpeg not found. Install via Homebrew: brew install ffmpeg${NC}"
+        exit 1
+    fi
+    # Resolve symlinks to get the real binary
+    FF=$(python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$FF")
+    FP=$(python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$FP")
+    cp "$FF" "$SCRIPT_DIR/Resources/ffmpeg"
+    cp "$FP" "$SCRIPT_DIR/Resources/ffprobe"
+    echo -e "${GREEN}✓ ffmpeg/ffprobe copied from Homebrew${NC}"
+fi
+chmod +x "$SCRIPT_DIR/Resources/ffmpeg" "$SCRIPT_DIR/Resources/ffprobe"
+echo -e "${GREEN}✓ ffmpeg/ffprobe found${NC}"
+
 # Check dependencies
 if ! xcode-select -p &>/dev/null; then
     echo -e "${RED}Error: Xcode Command Line Tools not found. Run: xcode-select --install${NC}"

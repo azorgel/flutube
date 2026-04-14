@@ -1,3 +1,5 @@
 build/
 dist/
 *.DS_Store
+Resources/ffmpeg
+Resources/ffprobe
