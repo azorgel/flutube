@@ -37,6 +37,15 @@ jobs:
       - name: Build Release
         run: cmake --build build --config Release --parallel
 
+      - name: Copy Resources into VST3 bundle
+        shell: pwsh
+        run: |
+          $bundle = Get-ChildItem -Path "build" -Filter "FluTube.vst3" -Recurse -Directory | Select-Object -First 1
+          $dest = Join-Path $bundle.FullName "Contents\Resources"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item "Resources\*" -Destination $dest -Recurse -Force
+          Write-Host "Copied Resources to $dest"
+
       - name: Install NSIS
         run: choco install nsis --no-progress -y
 
