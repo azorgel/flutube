@@ -3,6 +3,7 @@
 # Run this after build.sh has succeeded.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_NAME="FluTube"
 VERSION="1.0"
 IDENTIFIER="com.voltalabs.flutube"
@@ -31,6 +32,16 @@ mkdir -p "$PKG_ROOT/Library/Audio/Plug-Ins/VST3"
 
 cp -R "$AU_SRC"   "$PKG_ROOT/Library/Audio/Plug-Ins/Components/"
 cp -R "$VST3_SRC" "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/"
+
+# Sync Resources/ into both bundles (cmake POST_BUILD only runs on rebuild,
+# so do it explicitly here to guarantee ffmpeg/ffprobe are always included)
+RESOURCES_SRC="$SCRIPT_DIR/Resources"
+for bundle in \
+    "$PKG_ROOT/Library/Audio/Plug-Ins/Components/${PLUGIN_NAME}.component/Contents/Resources" \
+    "$PKG_ROOT/Library/Audio/Plug-Ins/VST3/${PLUGIN_NAME}.vst3/Contents/Resources"; do
+    cp -R "$RESOURCES_SRC/." "$bundle/"
+    chmod +x "$bundle/yt-dlp" "$bundle/ffmpeg" "$bundle/ffprobe" 2>/dev/null || true
+done
 
 # Strip quarantine from everything inside the payload
 xattr -cr "$PKG_ROOT" 2>/dev/null || true
