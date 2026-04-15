@@ -27,9 +27,13 @@ jobs:
       - name: Download ffmpeg for Windows
         shell: pwsh
         run: |
-          choco install ffmpeg --no-progress -y
-          Copy-Item "C:\ProgramData\chocolatey\bin\ffmpeg.exe"  "Resources\ffmpeg.exe"
-          Copy-Item "C:\ProgramData\chocolatey\bin\ffprobe.exe" "Resources\ffprobe.exe"
+          $url = "https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip"
+          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\ffmpeg.zip"
+          Expand-Archive -Path "$env:TEMP\ffmpeg.zip" -DestinationPath "$env:TEMP\ffmpeg" -Force
+          $bin = Get-ChildItem -Path "$env:TEMP\ffmpeg" -Filter "ffmpeg.exe" -Recurse | Select-Object -First 1
+          Copy-Item $bin.FullName "Resources\ffmpeg.exe"
+          $bin = Get-ChildItem -Path "$env:TEMP\ffmpeg" -Filter "ffprobe.exe" -Recurse | Select-Object -First 1
+          Copy-Item $bin.FullName "Resources\ffprobe.exe"
 
       - name: Configure CMake
         run: cmake -B build -A x64 -S .
